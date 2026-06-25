@@ -1,366 +1,315 @@
 const cells = document.querySelectorAll(".cell");
-
 const statusText = document.getElementById("status");
-
 const restartBtn = document.getElementById("restartBtn");
+const resetScoreBtn = document.getElementById("resetScoreBtn");
+const playerScoreEl = document.getElementById("playerScore");
+const computerScoreEl = document.getElementById("computerScore");
+const drawScoreEl = document.getElementById("drawScore");
+const pvpBtn = document.getElementById("pvpBtn");
+const aiBtn = document.getElementById("aiBtn");
+const difficultySelect = document.getElementById("difficultySelect");
+const starterSelect = document.getElementById("starterSelect");
 
-const playerScoreEl =
-document.getElementById("playerScore");
-
-const computerScoreEl =
-document.getElementById("computerScore");
-
-const pvpBtn =
-document.getElementById("pvpBtn");
-
-const aiBtn =
-document.getElementById("aiBtn");
-
-/* GAME VARIABLES */
-
-let board =
-["","","","","","","","",""];
-
+let board = ["", "", "", "", "", "", "", "", ""];
 let currentPlayer = "X";
-
 let gameActive = true;
-
 let gameMode = "pvp";
-
+let difficulty = "medium";
+let starter = "X";
 let playerScore = 0;
+let opponentScore = 0;
+let drawScore = 0;
 
-let computerScore = 0;
-
-/* WIN PATTERNS */
+const displayMarks = {
+    X: "X",
+    O: "O"
+};
 
 const winPatterns = [
-
-    [0,1,2],
-    [3,4,5],
-    [6,7,8],
-
-    [0,3,6],
-    [1,4,7],
-    [2,5,8],
-
-    [0,4,8],
-    [2,4,6]
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
 ];
 
-/* MODE BUTTONS */
+pvpBtn.addEventListener("click", () => {
+    setMode("pvp");
+});
 
-pvpBtn.addEventListener("click",()=>{
+aiBtn.addEventListener("click", () => {
+    setMode("ai");
+});
 
-    gameMode = "pvp";
-
-    pvpBtn.classList.add("active");
-
-    aiBtn.classList.remove("active");
-
+difficultySelect.addEventListener("change", () => {
+    difficulty = difficultySelect.value;
     restartGame();
 });
 
-aiBtn.addEventListener("click",()=>{
-
-    gameMode = "ai";
-
-    aiBtn.classList.add("active");
-
-    pvpBtn.classList.remove("active");
-
+starterSelect.addEventListener("change", () => {
+    starter = starterSelect.value;
     restartGame();
 });
 
-/* CELL EVENTS */
+restartBtn.addEventListener("click", restartGame);
+resetScoreBtn.addEventListener("click", resetScores);
 
-cells.forEach(cell=>{
-
-    cell.addEventListener("click",handleMove);
+cells.forEach((cell) => {
+    cell.addEventListener("click", handleMove);
 });
 
-/* RESTART */
+function setMode(mode) {
+    gameMode = mode;
+    pvpBtn.classList.toggle("active", mode === "pvp");
+    aiBtn.classList.toggle("active", mode === "ai");
+    updateScoreLabels();
+    restartGame();
+}
 
-restartBtn.addEventListener("click",restartGame);
+function handleMove() {
+    const index = Number(this.dataset.index);
 
-/* PLAYER MOVE */
-
-function handleMove(){
-
-    const index = this.dataset.index;
-
-    if(board[index] !== "" || !gameActive){
-
+    if (board[index] !== "" || !gameActive) {
         return;
     }
 
-    board[index] = currentPlayer;
-
-    this.textContent = currentPlayer;
-
-    if(currentPlayer === "X"){
-
-        this.classList.add("x");
-
-    }else{
-
-        this.classList.add("o");
+    if (gameMode === "ai" && currentPlayer === "O") {
+        return;
     }
 
-    /* CHECK WIN */
+    placeMove(index, currentPlayer);
+    finishTurn();
+}
 
-    if(checkWinner(currentPlayer)){
+function placeMove(index, player) {
+    board[index] = player;
+    cells[index].textContent = displayMarks[player];
+    cells[index].classList.add(player.toLowerCase());
+}
 
-        if(currentPlayer === "X"){
+function finishTurn() {
+    const winner = getWinningPattern(currentPlayer);
 
-            playerScore++;
+    if (winner) {
+        recordWin(currentPlayer, winner);
+        return;
+    }
 
-            playerScoreEl.textContent =
-            playerScore;
-
-        }else{
-
-            computerScore++;
-
-            computerScoreEl.textContent =
-            computerScore;
-        }
-
-        statusText.textContent =
-        currentPlayer + " Wins!";
-
+    if (isDraw()) {
+        drawScore++;
+        drawScoreEl.textContent = drawScore;
+        statusText.textContent = "It's a Draw";
         gameActive = false;
-
         return;
     }
 
-    /* DRAW */
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    updateStatus();
 
-    if(isDraw()){
-
-        statusText.textContent = "Draw!";
-
+    if (gameMode === "ai" && currentPlayer === "O") {
         gameActive = false;
-
-        return;
-    }
-
-    /* PVP MODE */
-
-    if(gameMode === "pvp"){
-
-        currentPlayer =
-        currentPlayer === "X" ? "O" : "X";
-
-        statusText.textContent =
-        currentPlayer + "'s Turn";
-    }
-
-    /* AI MODE */
-
-    else{
-
-        if(currentPlayer === "X"){
-
-            currentPlayer = "O";
-
-            statusText.textContent =
-            "Computer Thinking...";
-
-            setTimeout(computerMove,500);
-        }
+        setTimeout(computerMove, 450);
     }
 }
 
-/* COMPUTER MOVE */
+function computerMove() {
+    const move = getComputerMove();
+    placeMove(move, "O");
+    gameActive = true;
+    finishTurn();
+}
 
-function computerMove(){
-
-    let move = findWinningMove("O");
-
-    /* BLOCK PLAYER */
-
-    if(move === -1){
-
-        move = findWinningMove("X");
+function getComputerMove() {
+    if (difficulty === "easy") {
+        return getRandomMove();
     }
 
-    /* TAKE CENTER */
-
-    if(move === -1 && board[4] === ""){
-
-        move = 4;
+    if (difficulty === "medium") {
+        return getSmartMove();
     }
 
-    /* TAKE CORNERS */
+    return getBestMove();
+}
 
-    if(move === -1){
+function getSmartMove() {
+    return findWinningMove("O")
+        ?? findWinningMove("X")
+        ?? getPreferredMove()
+        ?? getRandomMove();
+}
 
-        const corners = [0,2,6,8];
+function getBestMove() {
+    let bestScore = -Infinity;
+    let bestMove = -1;
 
-        const freeCorners =
-        corners.filter(index=>{
+    getAvailableMoves().forEach((move) => {
+        board[move] = "O";
+        const score = minimax(false);
+        board[move] = "";
 
-            return board[index] === "";
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
+        }
+    });
+
+    return bestMove;
+}
+
+function minimax(isMaximizing) {
+    if (getWinningPattern("O")) {
+        return 10;
+    }
+
+    if (getWinningPattern("X")) {
+        return -10;
+    }
+
+    if (isDraw()) {
+        return 0;
+    }
+
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+
+        getAvailableMoves().forEach((move) => {
+            board[move] = "O";
+            bestScore = Math.max(bestScore, minimax(false));
+            board[move] = "";
         });
 
-        if(freeCorners.length > 0){
+        return bestScore;
+    }
 
-            move =
-            freeCorners[
-                Math.floor(
-                    Math.random()
-                    *
-                    freeCorners.length
-                )
-            ];
+    let bestScore = Infinity;
+
+    getAvailableMoves().forEach((move) => {
+        board[move] = "X";
+        bestScore = Math.min(bestScore, minimax(true));
+        board[move] = "";
+    });
+
+    return bestScore;
+}
+
+function findWinningMove(symbol) {
+    for (const pattern of winPatterns) {
+        const values = pattern.map((index) => board[index]);
+        const matchingCells = values.filter((value) => value === symbol).length;
+
+        if (matchingCells === 2 && values.includes("")) {
+            return pattern[values.indexOf("")];
         }
     }
 
-    /* RANDOM MOVE */
-
-    if(move === -1){
-
-        const available = [];
-
-        board.forEach((cell,index)=>{
-
-            if(cell === ""){
-
-                available.push(index);
-            }
-
-        });
-
-        move =
-        available[
-            Math.floor(
-                Math.random()
-                *
-                available.length
-            )
-        ];
-    }
-
-    board[move] = "O";
-
-    cells[move].textContent = "O";
-
-    cells[move].classList.add("o");
-
-    /* COMPUTER WIN */
-
-    if(checkWinner("O")){
-
-        computerScore++;
-
-        computerScoreEl.textContent =
-        computerScore;
-
-        statusText.textContent =
-        "Computer Wins!";
-
-        gameActive = false;
-
-        return;
-    }
-
-    /* DRAW */
-
-    if(isDraw()){
-
-        statusText.textContent = "Draw!";
-
-        gameActive = false;
-
-        return;
-    }
-
-    currentPlayer = "X";
-
-    statusText.textContent = "Your Turn";
+    return null;
 }
 
-/* FIND WINNING MOVE */
-
-function findWinningMove(symbol){
-
-    for(let pattern of winPatterns){
-
-        const values =
-        pattern.map(index=>board[index]);
-
-        if(
-
-            values.filter(v=>v===symbol).length
-            === 2
-
-            &&
-
-            values.includes("")
-
-        ){
-
-            return pattern[
-                values.indexOf("")
-            ];
-        }
+function getPreferredMove() {
+    if (board[4] === "") {
+        return 4;
     }
 
-    return -1;
+    const corners = [0, 2, 6, 8].filter((index) => board[index] === "");
+
+    if (corners.length > 0) {
+        return corners[Math.floor(Math.random() * corners.length)];
+    }
+
+    return null;
 }
 
-/* CHECK WINNER */
+function getRandomMove() {
+    const available = getAvailableMoves();
+    return available[Math.floor(Math.random() * available.length)];
+}
 
-function checkWinner(player){
+function getAvailableMoves() {
+    return board
+        .map((value, index) => value === "" ? index : null)
+        .filter((index) => index !== null);
+}
 
-    return winPatterns.some(pattern=>{
-
-        return pattern.every(index=>{
-
-            return board[index] === player;
-        });
-
+function getWinningPattern(player) {
+    return winPatterns.find((pattern) => {
+        return pattern.every((index) => board[index] === player);
     });
 }
 
-/* DRAW */
-
-function isDraw(){
-
-    return board.every(cell=>{
-
-        return cell !== "";
+function recordWin(player, pattern) {
+    pattern.forEach((index) => {
+        cells[index].classList.add("winning");
     });
+
+    if (player === "X") {
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        statusText.textContent = "Player X Wins";
+    } else {
+        opponentScore++;
+        computerScoreEl.textContent = opponentScore;
+        statusText.textContent = gameMode === "ai" ? "Computer Wins" : "Player O Wins";
+    }
+
+    gameActive = false;
 }
 
-/* RESTART */
+function isDraw() {
+    return board.every((cell) => cell !== "");
+}
 
-function restartGame(){
-
-    board =
-    ["","","","","","","","",""];
-
-    currentPlayer = "X";
-
+function restartGame() {
+    board = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = getStartingPlayer();
     gameActive = true;
 
-    cells.forEach(cell=>{
-
+    cells.forEach((cell) => {
         cell.textContent = "";
-
-        cell.classList.remove("x");
-
-        cell.classList.remove("o");
+        cell.classList.remove("x", "o", "winning");
     });
 
-    if(gameMode === "pvp"){
+    updateStatus();
 
-        statusText.textContent =
-        "X's Turn";
-
-    }else{
-
-        statusText.textContent =
-        "Your Turn";
+    if (gameMode === "ai" && currentPlayer === "O") {
+        gameActive = false;
+        setTimeout(computerMove, 450);
     }
 }
+
+function getStartingPlayer() {
+    if (starter === "random") {
+        return Math.random() > 0.5 ? "X" : "O";
+    }
+
+    return starter;
+}
+
+function updateStatus() {
+    if (gameMode === "ai") {
+        statusText.textContent = currentPlayer === "X" ? "Your Turn" : "Computer's Turn";
+        return;
+    }
+
+    statusText.textContent = currentPlayer === "X" ? "Player X's Turn" : "Player O's Turn";
+}
+
+function resetScores() {
+    playerScore = 0;
+    opponentScore = 0;
+    drawScore = 0;
+    playerScoreEl.textContent = "0";
+    computerScoreEl.textContent = "0";
+    drawScoreEl.textContent = "0";
+    restartGame();
+}
+
+function updateScoreLabels() {
+    const scoreLabels = document.querySelectorAll(".score-box h3");
+    scoreLabels[0].textContent = "Player X";
+    scoreLabels[1].textContent = gameMode === "ai" ? "Computer" : "Player O";
+}
+
+updateScoreLabels();

@@ -4,18 +4,21 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tic Tac Toe Pro</title>
+    <title>Tic Tac Toe</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div class="container">
+    <main class="container">
 
-        <div class="game-card">
+        <section class="game-card" aria-label="Tic Tac Toe game">
 
-            <h1>Tic Tac Toe Pro</h1>
+            <div class="header">
+                <p class="eyebrow">Simple everyday game</p>
+                <h1>Tic Tac Toe</h1>
+            </div>
 
             <!-- GAME MODE -->
 
@@ -31,6 +34,30 @@
 
             </div>
 
+            <!-- OPTIONS -->
+
+            <div class="options-grid">
+
+                <label class="option-field" for="difficultySelect">
+                    <span>Difficulty</span>
+                    <select id="difficultySelect">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </label>
+
+                <label class="option-field" for="starterSelect">
+                    <span>First Move</span>
+                    <select id="starterSelect">
+                        <option value="X" selected>Player X</option>
+                        <option value="O">Player O or Computer</option>
+                        <option value="random">Random</option>
+                    </select>
+                </label>
+
+            </div>
+
             <!-- SCOREBOARD -->
 
             <div class="score-board">
@@ -41,8 +68,13 @@
                 </div>
 
                 <div class="score-box">
-                    <h3>Player O / Computer</h3>
+                    <h3>Player O or Computer</h3>
                     <span id="computerScore">0</span>
+                </div>
+
+                <div class="score-box">
+                    <h3>Draws</h3>
+                    <span id="drawScore">0</span>
                 </div>
 
             </div>
@@ -50,7 +82,7 @@
             <!-- STATUS -->
 
             <div class="status" id="status">
-                X's Turn
+                Player X's Turn
             </div>
 
             <!-- GAME BOARD -->
@@ -73,13 +105,19 @@
 
             <!-- BUTTON -->
 
-            <button id="restartBtn">
-                New Game
-            </button>
+            <div class="actions">
+                <button id="restartBtn" class="primary-btn">
+                    New Game
+                </button>
 
-        </div>
+                <button id="resetScoreBtn" class="secondary-btn">
+                    Reset Scores
+                </button>
+            </div>
 
-    </div>
+        </section>
+
+    </main>
 
     <script src="script.js"></script>
 
